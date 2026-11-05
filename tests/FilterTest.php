@@ -1287,7 +1287,6 @@ it('throws RelationNotFoundException when the relation method exists but does no
         ->get();
 })->throws(RelationNotFoundException::class);
 
-
 it('resolves model bindings on the related model for nested scope filters', function () {
     $matchingModel = TestModel::create(['name' => 'matching']);
     $relatedModel = $matchingModel->relatedModels()->create(['name' => 'related']);
@@ -1305,3 +1304,27 @@ it('rejects missing model bindings on nested scope filters', function () {
         ->allowedFilters(AllowedFilter::scope('relatedModels.matching'))
         ->get();
 })->throws(InvalidFilterValue::class);
+
+it('resolves matching scope names on the related model instead of the parent', function () {
+    $model = TestModel::create(['name' => 'parent']);
+    $related = $model->relatedModels()->create(['name' => 'related']);
+    TestModel::create(['name' => 'other'])->relatedModels()->create(['name' => 'other']);
+
+    $models = createQueryFromFilterRequest(['relatedModels.user' => $related->id])
+        ->allowedFilters(AllowedFilter::scope('relatedModels.user'))
+        ->get();
+
+    expect($models->modelKeys())->toBe([$model->id]);
+});
+
+it('resolves model bindings on deeply nested relation scopes', function () {
+    $model = TestModel::create(['name' => 'parent']);
+    $model->relatedModels()->create(['name' => 'related']);
+    TestModel::create(['name' => 'other'])->relatedModels()->create(['name' => 'other']);
+
+    $models = createQueryFromFilterRequest(['relatedModels.testModel.user' => $model->id])
+        ->allowedFilters(AllowedFilter::scope('relatedModels.testModel.user'))
+        ->get();
+
+    expect($models->modelKeys())->toBe([$model->id]);
+});

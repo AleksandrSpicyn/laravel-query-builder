@@ -23,6 +23,11 @@ class RelatedModel extends Model
         return $this->hasMany(NestedRelatedModel::class);
     }
 
+    public function scopeUser(Builder $query, self $model): Builder
+    {
+        return $query->whereKey($model->getKey());
+    }
+
     public function scopeMatching(Builder $query, self $model): Builder
     {
         return $query->whereKey($model->getKey());
