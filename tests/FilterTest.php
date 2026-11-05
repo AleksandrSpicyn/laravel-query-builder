@@ -1286,3 +1286,22 @@ it('throws RelationNotFoundException when the relation method exists but does no
         ->allowedFilters(AllowedFilter::belongsTo('author', 'nonRelationMethod'))
         ->get();
 })->throws(RelationNotFoundException::class);
+
+
+it('resolves model bindings on the related model for nested scope filters', function () {
+    $matchingModel = TestModel::create(['name' => 'matching']);
+    $relatedModel = $matchingModel->relatedModels()->create(['name' => 'related']);
+    TestModel::create(['name' => 'other'])->relatedModels()->create(['name' => 'other']);
+
+    $models = createQueryFromFilterRequest(['relatedModels.matching' => $relatedModel->id])
+        ->allowedFilters(AllowedFilter::scope('relatedModels.matching'))
+        ->get();
+
+    expect($models->modelKeys())->toBe([$matchingModel->id]);
+});
+
+it('rejects missing model bindings on nested scope filters', function () {
+    createQueryFromFilterRequest(['relatedModels.matching' => 999])
+        ->allowedFilters(AllowedFilter::scope('relatedModels.matching'))
+        ->get();
+})->throws(InvalidFilterValue::class);
